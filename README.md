@@ -245,15 +245,7 @@ See [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) for complete endpoint sch
 
 ## 8. Contributor Backlog & Drips Wave Program
 
-VeraOS maintains a categorized open-source backlog mapped to the official **Drips Stellar Wave Program** complexity tiers:
-
-| Tier | Drips Points | Scope & Focus Areas | Backlog Issue Templates |
-| :--- | :--- | :--- | :--- |
-| **Trivial** | **100 Points** | UI polish, export utilities, schema validations, API documentation | [Issue #1](./.github/ISSUES/01_evidence_dossier_export.md), [Issue #2](./.github/ISSUES/02_openapi_specification.md), [Issue #3](./.github/ISSUES/03_prometheus_metrics_endpoint.md) |
-| **Medium** | **150 Points** | Evidence providers, async webhooks, multi-op envelope decoding, database adapters | [Issue #4](./.github/ISSUES/04_multi_op_stellar_transaction_verification.md), [Issue #5](./.github/ISSUES/05_telegram_async_completion_webhooks.md), [Issue #6](./.github/ISSUES/06_persistent_database_repository_adapter.md) |
-| **High** | **200 Points** | Soroban smart contracts in Rust, onchain attestation registry, contract event parsing | [Issue #7](./.github/ISSUES/07_onchain_soroban_attestation_registry.md), [Issue #8](./.github/ISSUES/08_soroban_contract_event_parser.md) |
-
-- **Structured Backlog**: Browse all tasks under [`.github/ISSUES/`](./.github/ISSUES/).
+VeraOS maintains a categorized open-source backlog mapped to the official 
 - **Technical Roadmap**: Detailed milestone specifications in [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md).
 - **Contributing Guide**: Review branch strategy (`main`/`dev`) and PR standards in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
