@@ -13,17 +13,22 @@ assignees: []
 
 ---
 
-## Summary
-Implement a persistent database adapter satisfying `IVerificationRepository`, enabling VeraOS verification records, audit evidence traces, and operator session state to persist durably across server restarts and scale across multiple process instances.
+## Problem Summary
+Currently, VeraOS includes an in-memory repository (`server/storage/memoryRepository.ts`) and Cloudflare D1 integration. For self-hosted Node.js / Docker production deployments, verification records and attempt histories do not survive server restarts unless connected to Cloudflare D1. We need a swappable SQLite / PostgreSQL persistent database adapter using standard connection strings to ensure high data integrity, durability, and horizontal scalability.
 
-## Why It Matters
-Currently, VeraOS includes an in-memory repository (`server/storage/memoryRepository.ts`) and Cloudflare D1 integration. For self-hosted Node.js / Docker production deployments, a swappable SQLite / PostgreSQL adapter using standard connection strings ensures high data integrity and reliability.
-
-## Architectural Pointers & Affected Files
+## Technical Scope & Architecture
 - `server/storage/repository.ts`: Core `IVerificationRepository` interface.
 - `server/storage/sqliteRepository.ts` (New): SQLite / PostgreSQL implementation.
 - `server/storage/factory.ts`: Repository provider factory switching based on `DATABASE_URL` environment variable.
 - `server/tests/repository.test.ts` (New): Automated CRUD integration tests.
+
+## Expected Test Coverage
+- CRUD tests for saving and retrieving `VerificationRecord` instances.
+- Attempt history update tests ensuring retry loops preserve parent-child link.
+- Schema auto-migration test on cold startup.
+- Fallback test ensuring `MemoryRepository` is selected if no `DATABASE_URL` is set.
+- 100% pass rate across existing automated test suites (`npm test`).
+- Typecheck (`npx tsc -b`) and linter (`npm run lint`) clean with zero errors.
 
 ## Acceptance Criteria
 - [ ] Implement `SqliteRepository` supporting all methods of `IVerificationRepository`:

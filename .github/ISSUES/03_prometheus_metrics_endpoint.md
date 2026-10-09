@@ -13,16 +13,20 @@ assignees: []
 
 ---
 
-## Summary
-Add a standard `GET /metrics` HTTP endpoint exposing Prometheus-formatted metrics measuring verification throughput, verdict counts (`VERIFIED` vs `FAILED`), and Stellar RPC query response times.
+## Problem Summary
+Production deployments of VeraOS in enterprise Kubernetes and Docker clusters require standard metrics endpoints for telemetry scraping with Prometheus, Alertmanager, and Grafana. We need a standard `GET /metrics` HTTP endpoint exposing Prometheus-formatted metrics measuring verification throughput, verdict counts (`VERIFIED` vs `FAILED`), and Stellar RPC query response times.
 
-## Why It Matters
-Production deployments of VeraOS in enterprise Kubernetes and Docker environments require standard metrics endpoints for monitoring with Prometheus, Alertmanager, and Grafana.
+## Technical Scope & Architecture
+- `server/api/routes.ts`: Register `GET /metrics` route handler.
+- `server/monitoring/metrics.ts` (New): Metric registry for counters, gauges, and histograms.
+- `server/tests/metrics.test.ts` (New): Integration test suite verifying scrape output format and counter increments.
 
-## Architectural Pointers & Affected Files
-- `server/api/routes.ts`: Register `GET /metrics`.
-- `server/monitoring/metrics.ts` (New): Metric registry for counters and histograms.
-- `server/tests/metrics.test.ts` (New): Integration test suite.
+## Expected Test Coverage
+- Unit tests validating Prometheus text exposition formatting (`# HELP`, `# TYPE`, metric line).
+- Integration test checking counter increment on verification completion (`VERIFIED`, `FAILED`).
+- Histogram duration test for Stellar RPC query timings.
+- Zero regressions across existing automated test suites (`npm test`).
+- Typecheck (`npx tsc -b`) and linter (`npm run lint`) clean with zero errors.
 
 ## Acceptance Criteria
 - [ ] Implement text-based Prometheus metric output:
@@ -35,4 +39,4 @@ Production deployments of VeraOS in enterprise Kubernetes and Docker environment
 - [ ] PR targets the `dev` branch.
 
 ## Tech Stack
-TypeScript, Node.js HTTP, Prometheus format.
+TypeScript, Node.js HTTP, Prometheus text exposition format.

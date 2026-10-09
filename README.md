@@ -94,13 +94,61 @@ VeraOS connects directly to **Stellar Soroban RPC** (`https://soroban-testnet.st
 | **Deceptive Tx (0.5 USDC)** | `108822f67b10e3ad38db576d60712939c1bdbe372c9d4729928d613605682759` | [View 0.5 USDC Tx](https://stellar.expert/explorer/testnet/tx/108822f67b10e3ad38db576d60712939c1bdbe372c9d4729928d613605682759) |
 | **Corrected Tx (5.0 USDC)** | `62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf` | [View 5.0 USDC Tx](https://stellar.expert/explorer/testnet/tx/62256096f306726197208231b00e422628b0bb83e104dabed9a74da5186afbaf) |
 
+### Soroban RPC Integration Example
+VeraOS directly interfaces with the Soroban RPC JSON-RPC 2.0 API (`https://soroban-testnet.stellar.org`) to inspect onchain transaction envelopes:
+
+```typescript
+import { TransactionBuilder, Networks } from "@stellar/stellar-sdk";
+
+// 1. Query Soroban RPC for confirmed transaction
+const rpcResponse = await fetch("https://soroban-testnet.stellar.org", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "getTransaction",
+    params: { hash: txHash }
+  })
+}).then(res => res.json());
+
+// 2. Decode signed envelope XDR on Stellar Testnet
+const envelopeXdr = rpcResponse.result.envelopeXdr;
+const tx = TransactionBuilder.fromXDR(envelopeXdr, Networks.TESTNET);
+
+// 3. Deterministically inspect payment operations
+for (const op of tx.operations) {
+  if (op.type === "payment") {
+    const destination = op.destination;
+    const amount = parseFloat(op.amount);
+    const asset = op.asset.isNative() ? "XLM" : op.asset.getCode();
+    // Compare actual ledger state against AI agent claim
+  }
+}
+```
+
 ---
 
-## 4. Quick Start
+## 4. Live Environments & Endpoints
+
+| Environment | Service / URL | Status | Description |
+| :--- | :--- | :--- | :--- |
+| **Production Web Dashboard** | [`https://vera-os.vercel.app`](https://vera-os.vercel.app) | Live | Operator dashboard, verification explorer, evidence graphs |
+| **Telegram Bot** | [`@VeraOS_Layer_bot`](https://t.me/VeraOS_Layer_bot) | Live | Conversational operator interface & command runner |
+| **1-Click Permanent Invite** | [Join Telegram Bot](https://t.me/VeraOS_Layer_bot?start=invite_VERA-OFFICIAL) | Live | Instant operator onboarding with preloaded testnet credentials |
+| **Health API** | `https://vera-os.vercel.app/health` | Live | Operational health check endpoint |
+| **Local Dashboard** | `http://localhost:5173` | Local | Vite development server |
+| **Local Standalone API** | `http://localhost:3001` | Local | Standalone Node.js Express API runner |
+| **Stellar Soroban RPC** | `https://soroban-testnet.stellar.org` | Primary | Authoritative JSON-RPC 2.0 transaction ledger |
+| **Stellar Horizon Testnet** | `https://horizon-testnet.stellar.org` | Fallback | High-availability fallback REST endpoint |
+
+---
+
+## 5. Quick Start & Local Setup
 
 ### 1. Installation
 ```bash
-git clone https://github.com/k-deejah/VeraOS.git
+git clone https://github.com/Vera-Protocal/VeraOS.git
 cd VeraOS
 npm install
 cp .env.example .env
@@ -136,23 +184,47 @@ docker compose up --build
 
 ---
 
-## 5. Telegram Bot Interface
+## 6. Telegram Bot Interface & Deployment
 
-VeraOS includes a dedicated, production-grade Telegram bot supporting both **long-polling** (`getUpdates`) and **webhook** modes.
+VeraOS includes a dedicated, production-ready Telegram bot supporting both **long-polling** (`getUpdates`) and **webhook** modes.
 
-### Commands
-- `/start` — Welcome message and command guide.
+### Available Commands
+- `/start` — Welcome message, system status, and command reference.
 - `/verify` — Start interactive verification or inline evaluation (`/verify <task> | <output>`).
-- `/status <id>` — Check live status card of a verification.
+- `/status <id>` — Check live status card of a verification run.
 - `/evidence <id>` — View onchain evidence and Stellar.Expert explorer links.
-- `/correct <id> [note]` — Issue self-correction directive.
+- `/correct <id> [note]` — Issue structured remediation directives.
 - `/resubmit <id> [tx]` — Re-evaluate with corrected transaction hash.
 
-See [`docs/TELEGRAM_BOT.md`](./docs/TELEGRAM_BOT.md) for full configuration and security documentation.
+### Bot Deployment Options
+
+#### Option A: Standalone Long-Polling Runner (Development / VM)
+Ideal for local development or dedicated server processes:
+```bash
+# 1. Set bot token in environment or .env
+export TELEGRAM_BOT_TOKEN="your_bot_token_from_botfather"
+export VERAOS_API_URL="http://localhost:5173"
+
+# 2. Launch long-polling process
+npm run bot
+```
+
+#### Option B: Serverless Webhook Ingress (Production / Cloud)
+Ideal for containerized or edge deployments:
+1. Configure `TELEGRAM_BOT_TOKEN` and `TELEGRAM_WEBHOOK_SECRET` in your hosting environment.
+2. Register the webhook with Telegram:
+   ```bash
+   curl -F "url=https://your-domain.com/v1/telegram/webhook" \
+        -F "secret_token=your_secret_token" \
+        https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook
+   ```
+3. Inbound requests to `/telegram/webhook` or `/v1/telegram/webhook` are automatically authenticated and processed.
+
+See [`docs/TELEGRAM_BOT.md`](./docs/TELEGRAM_BOT.md) for full configuration, session state machines, and security architecture.
 
 ---
 
-## 6. REST API Reference
+## 7. REST API Reference
 
 ### Execute Verification: `POST /v1/verify`
 ```bash
@@ -171,31 +243,37 @@ See [`docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) for complete endpoint sch
 
 ---
 
-## 7. Product & Technical Roadmap
+## 8. Contributor Backlog & Drips Wave Program
 
-Our prioritized technical milestones focus on enterprise scalability and zero-trust verification:
-- **Cloudflare D1 Ledger Storage**: SQLite database schema with persistent user sessions and audit logs.
-- **Stellar Horizon RPC Corroboration**: Live onchain payment and contract invocation proofs.
-- **Automated Remediation**: Actionable correction loops for failed agent outputs.
+VeraOS maintains a categorized open-source backlog mapped to the official **Drips Stellar Wave Program** complexity tiers:
 
-Check out [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md) for full technical milestone details.
+| Tier | Drips Points | Scope & Focus Areas | Backlog Issue Templates |
+| :--- | :--- | :--- | :--- |
+| **Trivial** | **100 Points** | UI polish, export utilities, schema validations, API documentation | [Issue #1](./.github/ISSUES/01_evidence_dossier_export.md), [Issue #2](./.github/ISSUES/02_openapi_specification.md), [Issue #3](./.github/ISSUES/03_prometheus_metrics_endpoint.md) |
+| **Medium** | **150 Points** | Evidence providers, async webhooks, multi-op envelope decoding, database adapters | [Issue #4](./.github/ISSUES/04_multi_op_stellar_transaction_verification.md), [Issue #5](./.github/ISSUES/05_telegram_async_completion_webhooks.md), [Issue #6](./.github/ISSUES/06_persistent_database_repository_adapter.md) |
+| **High** | **200 Points** | Soroban smart contracts in Rust, onchain attestation registry, contract event parsing | [Issue #7](./.github/ISSUES/07_onchain_soroban_attestation_registry.md), [Issue #8](./.github/ISSUES/08_soroban_contract_event_parser.md) |
+
+- **Structured Backlog**: Browse all tasks under [`.github/ISSUES/`](./.github/ISSUES/).
+- **Technical Roadmap**: Detailed milestone specifications in [`docs/CONTRIBUTOR_ROADMAP.md`](./docs/CONTRIBUTOR_ROADMAP.md).
+- **Contributing Guide**: Review branch strategy (`main`/`dev`) and PR standards in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ---
 
-## 8. Documentation Index
+## 9. Documentation Index
 
 - [Architecture & Data Flow](./docs/ARCHITECTURE.md)
 - [Stellar RPC & Horizon Integration](./docs/STELLAR_INTEGRATION.md)
 - [Telegram Bot Guide](./docs/TELEGRAM_BOT.md)
 - [REST API Reference](./docs/API_REFERENCE.md)
-- [Technical Roadmap](./docs/CONTRIBUTOR_ROADMAP.md)
+- [Technical Roadmap & Backlog](./docs/CONTRIBUTOR_ROADMAP.md)
 - [Demo Script & Video Narration](./docs/DEMO_SCRIPT.md)
 
 ---
 
-## 9. Security & Governance
+## 10. Security & Governance
 
-- **Security Policy**: See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure and reporting.
+- **Security Policy**: See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure and reporting SLAs.
 - **Contributing**: See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for development workflows and PR templates.
 - **License**: Released under the [MIT License](./LICENSE).
 - **Maintainers**: Maintained by [@k-deejah](https://github.com/k-deejah) and the VeraOS Open Source Contributors.
+

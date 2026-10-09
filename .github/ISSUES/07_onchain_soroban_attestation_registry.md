@@ -13,18 +13,22 @@ assignees: []
 
 ---
 
-## Summary
-Design, write, test, and deploy a Soroban smart contract written in Rust that anchors cryptographic verification certificates into Stellar ledger state whenever an AI agent task achieves a `VERIFIED` verdict.
+## Problem Summary
+Currently, verification proofs are persisted off-chain or indexed via transaction hashes. Writing attestations directly into a Soroban smart contract creates immutable, composable onchain proofs that other Soroban contracts (such as escrow pools, DAO treasury payouts, or collateral managers) can query prior to releasing funds. We need a Soroban smart contract written in Rust that anchors cryptographic verification certificates into Stellar ledger state whenever an AI agent task achieves a `VERIFIED` verdict.
 
-## Why It Matters
-Currently, verification proofs are persisted off-chain or indexed via transaction hashes. Writing attestations directly into a Soroban smart contract creates immutable, composable onchain proofs that other Soroban contracts (such as escrow pools, DAO treasury payouts, or collateral managers) can query prior to releasing funds.
-
-## Architectural Pointers & Affected Files
+## Technical Scope & Architecture
 - `contracts/attestation_registry/` (New): Rust Soroban smart contract project.
   - `src/lib.rs`: Soroban contract logic.
   - `Cargo.toml`: Package dependencies (`soroban-sdk`).
 - `server/verification/pipeline.ts`: Post-verification attestation trigger invoking contract when `verdict === "VERIFIED"`.
 - `server/tests/sorobanAttestation.test.ts` (New): Integration test mocking or calling Soroban RPC.
+
+## Expected Test Coverage
+- Unit tests written in Rust (`cargo test`) verifying state storage and duplicate attestation prevention.
+- Mock Soroban RPC integration test verifying client invocation encoding (`scValToNative`).
+- Contract authorization tests ensuring only authorized VeraOS attestor addresses can write records.
+- 100% test pass rate across existing automated test suites (`npm test`).
+- TypeScript checks clean (`npx tsc -b`) and linter clean (`npm run lint`).
 
 ## Acceptance Criteria
 - [ ] Create `contracts/attestation_registry/Cargo.toml` and `src/lib.rs`.

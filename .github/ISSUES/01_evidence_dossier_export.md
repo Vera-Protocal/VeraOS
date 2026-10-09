@@ -13,17 +13,20 @@ assignees: []
 
 ---
 
-## Summary
-Implement client-side export capabilities on `VerificationDetail.tsx` and `EvidenceExplorer.tsx` enabling operators and compliance auditors to download complete verification records in both structured JSON and tabular CSV formats.
+## Problem Summary
+When AI agents execute financial workflows or settle payments on Stellar, risk managers and enterprise auditors require portable compliance dossiers for audit retention, reporting, and dispute resolution. Currently, records can only be viewed in-browser. We need one-click export capabilities on `VerificationDetail.tsx` and `EvidenceExplorer.tsx` to download complete verification records in structured JSON and flattened CSV formats.
 
-## Why It Matters
-When AI agents execute financial workflows or settle payments on Stellar, risk managers and enterprise auditors require portable compliance dossiers for audit retention, reporting, and dispute resolution.
-
-## Architectural Pointers & Affected Files
+## Technical Scope & Architecture
 - `src/pages/VerificationDetail.tsx`: Main verification view where export triggers should appear.
 - `src/pages/EvidenceExplorer.tsx`: Detailed evidence triangulation view.
 - `src/types/verification.ts`: TypeScript definitions for `VerificationRecord`, `VerificationCheck`, and `EvidenceSource`.
 - `src/lib/exportUtils.ts` (New): Utility functions for serializing verification trees into CSV and JSON Blob downloads.
+
+## Expected Test Coverage
+- Unit tests validating JSON & CSV serialization structure and encoding.
+- Verification tests ensuring complex nested structures (evidence traces, remediation directives) format cleanly without truncation.
+- Zero regressions against existing automated test suites (`npm test`).
+- Typecheck (`npx tsc -b`) and linter (`npm run lint`) clean with zero errors.
 
 ## Acceptance Criteria
 - [ ] Create `src/lib/exportUtils.ts` with:
