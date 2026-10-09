@@ -4,7 +4,7 @@
 *Verify before you trust.*
 
 [![CI](https://github.com/k-deejah/VeraOS/actions/workflows/ci.yml/badge.svg)](https://github.com/k-deejah/VeraOS/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-28%2F28%20passing-brightgreen)](https://github.com/k-deejah/VeraOS)
+[![Tests](https://img.shields.io/badge/tests-84%2F84%20passing-brightgreen)](https://github.com/k-deejah/VeraOS)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![Stellar](https://img.shields.io/badge/Stellar-Testnet%20%7C%20Soroban%20RPC-black?logo=stellar)](https://developers.stellar.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -120,7 +120,7 @@ npm run bot
 
 ### 3. Run Automated Tests
 ```bash
-# Runs complete 28-test suite (engine, stellar, stellarRpc, telegram)
+# Runs complete automated test suite (84+ passing tests across 13 test suites)
 npm test
 
 # Run linter and typecheck

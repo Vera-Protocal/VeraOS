@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "💬 Telegram Community & Operator Support"
+    url: "https://t.me/VeraOSBot"
+    about: "Join the VeraOS community to discuss verification, agent architectures, and operator workflows."
+  - name: "🌊 Drips Stellar Wave Contributor Program"
+    url: "https://drips.network"
+    about: "Learn more about the Drips Wave program and earning developer rewards on Stellar."
