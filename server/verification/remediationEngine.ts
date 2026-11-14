@@ -4,15 +4,72 @@ import type {
   RemediationPacket,
   RemediationDirective,
 } from "../types/domain.ts";
+import { buildRemediationTransaction } from "../stellar/remediationBuilder.ts";
 
+function extractExpectedPaymentParams(expected: unknown): {
+  requiredAmount: number;
+  assetCode: string;
+  assetIssuer?: string;
+  recipientAccount?: string;
+} {
+  if (expected && typeof expected === "object") {
+    const obj = expected as {
+      amount?: number;
+      token?: string;
+      assetCode?: string;
+      assetIssuer?: string;
+      recipient?: string;
+    };
+    const requiredAmount = typeof obj.amount === "number" ? obj.amount : 5;
+    const assetCode = (obj.token || obj.assetCode || "USDC").toUpperCase();
+    return {
+      requiredAmount,
+      assetCode,
+      assetIssuer: obj.assetIssuer,
+      recipientAccount: obj.recipient,
+    };
+  }
+  if (typeof expected === "number") {
+    return { requiredAmount: expected, assetCode: "USDC" };
+  }
+  if (typeof expected === "string") {
+    const match = expected.match(/(\d+(?:\.\d+)?)\s*([A-Za-z0-9]+)?/);
+    if (match) {
+      return {
+        requiredAmount: parseFloat(match[1]),
+        assetCode: (match[2] || "USDC").toUpperCase(),
+      };
+    }
+  }
+  return { requiredAmount: 5, assetCode: "USDC" };
+}
 
+function extractObservedAmount(observed: unknown, explanation: string): number {
+  if (typeof observed === "number" && Number.isFinite(observed)) {
+    return observed;
+  }
+  if (typeof observed === "string") {
+    const leadingNum = observed.trim().match(/^(\d+(?:\.\d+)?)\b/);
+    if (leadingNum) {
+      return parseFloat(leadingNum[1]);
+    }
+  }
+  const expMatch =
+    explanation.match(/Observed:\s*(\d+(?:\.\d+)?)/i) ||
+    explanation.match(/receipt shows\s*(\d+(?:\.\d+)?)/i);
+  if (expMatch) {
+    return parseFloat(expMatch[1]);
+  }
+  return 0;
+}
 
 export class RemediationEngine {
   generateRemediation(
     requirements: Requirement[],
     checks: VerificationCheck[],
     attempt = 1,
-    maxAttempts = 3
+    maxAttempts = 3,
+    verificationId = "run"
   ): RemediationPacket | undefined {
     const failedOrActionableChecks = checks.filter(
       (c) => c.status === "failed" || (c.status === "unverifiable" && c.explanation.includes("omitted"))
@@ -56,12 +113,30 @@ export class RemediationEngine {
             reason: "Worker claimed payment but omitted an onchain transaction hash or receipt.",
           });
         } else {
+          const { requiredAmount, assetCode, assetIssuer, recipientAccount } =
+            extractExpectedPaymentParams(req.expected);
+          const observedAmount = extractObservedAmount(check.observed, check.explanation);
+          const txArtifact = buildRemediationTransaction({
+            verificationId,
+            recipientAccount,
+            requiredAmount,
+            observedAmount,
+            assetCode,
+            assetIssuer,
+          });
+
           directives.push({
             id: `dir_${dirIndex++}`,
             type: "CORRECT_TRANSACTION",
             requirementId: req.id,
+            target: txArtifact.recipientAccount,
             required: req.expected,
-            reason: `Payment discrepancy: ${check.explanation} Execute supplemental transfer to satisfy required amount.`,
+            reason: `Payment discrepancy: ${check.explanation} Execute supplemental transfer of ${txArtifact.deficitAmount} ${txArtifact.assetCode} to satisfy required amount.`,
+            unsignedXdr: txArtifact.unsignedXdr,
+            laboratoryUrl: txArtifact.laboratoryUrl,
+            deficitAmount: txArtifact.deficitAmount,
+            assetCode: txArtifact.assetCode,
+            memo: txArtifact.memo,
           });
         }
       } else if (req.type === "slippage") {

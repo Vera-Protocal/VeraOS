@@ -92,6 +92,11 @@ export interface RemediationDirective {
   reason?: string;
   required?: unknown;
   suggestedAlternatives?: string[];
+  unsignedXdr?: string;
+  laboratoryUrl?: string;
+  deficitAmount?: number;
+  assetCode?: string;
+  memo?: string;
 }
 
 export interface RemediationPacket {
@@ -207,6 +212,11 @@ export interface VerificationRecord {
       suggestedAlternatives?: string[];
       requiredDelta?: number | string;
       tokenContract?: string;
+      unsignedXdr?: string;
+      laboratoryUrl?: string;
+      deficitAmount?: number;
+      assetCode?: string;
+      memo?: string;
       mandatory: boolean;
     }>;
     rawTraceJson?: string;

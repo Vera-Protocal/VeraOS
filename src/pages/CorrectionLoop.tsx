@@ -2,6 +2,17 @@ import React, { useState } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useVerification } from "../hooks/useVerification";
 
+declare global {
+  interface Window {
+    freighterApi?: {
+      signTransaction?: (
+        xdr: string,
+        opts?: { networkPassphrase?: string }
+      ) => Promise<string | { signedTxXdr?: string }>;
+    };
+  }
+}
+
 export const CorrectionLoop: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -16,6 +27,17 @@ export const CorrectionLoop: React.FC = () => {
   const failedInvariants = invariants.filter((i) => i.status !== "PASSED");
   const passedInvariants = invariants.filter((i) => i.status === "PASSED");
   const remediationDirectives = latestAttempt?.remediationDirectives || [];
+  const coreDirectives = verification?.remediation?.directives || [];
+
+  const xdrDirective =
+    remediationDirectives.find((d) => Boolean(d.unsignedXdr)) ||
+    coreDirectives.find((d) => Boolean(d.unsignedXdr));
+  const unsignedXdr = xdrDirective?.unsignedXdr;
+  const laboratoryUrl =
+    xdrDirective?.laboratoryUrl ||
+    (unsignedXdr
+      ? `https://laboratory.stellar.org/#txsigner?xdr=${encodeURIComponent(unsignedXdr)}`
+      : undefined);
 
   const [txHash, setTxHash] = useState("");
   const [context, setContext] = useState(
@@ -27,6 +49,7 @@ export const CorrectionLoop: React.FC = () => {
   );
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [freighterStatus, setFreighterStatus] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -74,6 +97,34 @@ export const CorrectionLoop: React.FC = () => {
 
   const runId = verification.displayId ? `Run VR-${verification.displayId}` : `Run VR-${id?.slice(-6).toUpperCase()}`;
 
+  const handleSignWithFreighter = async () => {
+    if (!unsignedXdr) return;
+    setErrorMessage(null);
+    setFreighterStatus(null);
+    try {
+      if (window.freighterApi?.signTransaction) {
+        const result = await window.freighterApi.signTransaction(unsignedXdr, {
+          networkPassphrase: "Test SDF Network ; September 2015",
+        });
+        const signed =
+          typeof result === "string" ? result : result?.signedTxXdr || unsignedXdr;
+        setContext(
+          `Signed remediation XDR with Freighter: ${signed.slice(0, 32)}...`
+        );
+        setFreighterStatus("Remediation XDR signed via Freighter wallet.");
+      } else if (laboratoryUrl) {
+        window.open(laboratoryUrl, "_blank", "noopener,noreferrer");
+        setFreighterStatus(
+          "Freighter extension not detected; opened unsigned XDR in Stellar Laboratory."
+        );
+      }
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Failed to sign remediation XDR with Freighter"
+      );
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -84,7 +135,7 @@ export const CorrectionLoop: React.FC = () => {
             ? {
                 txHash: txHash.trim(),
                 target: "Supplemental Proof",
-                supplementalAmount: 4.5,
+                supplementalAmount: xdrDirective?.deficitAmount ?? 4.5,
                 correctedWorkerOutput: `Supplemental proof submitted.\nTxHash: ${txHash.trim()}\nNote: ${context.trim()}`,
               }
             : {
@@ -113,7 +164,7 @@ export const CorrectionLoop: React.FC = () => {
   const primaryFailedInv = failedInvariants[0];
   const headline = primaryFailedInv?.name || "Requirement invariant unresolved";
   const reasonText =
-    (primaryFailedInv?.details as any)?.explanation ||
+    (primaryFailedInv?.details as { explanation?: string } | undefined)?.explanation ||
     remediationDirectives[0]?.reason ||
     "The observed output or on-chain state does not satisfy all requirements.";
 
@@ -169,6 +220,46 @@ export const CorrectionLoop: React.FC = () => {
             {reasonText}
           </p>
         </div>
+
+        {unsignedXdr && (
+          <div className="bg-[#FAF8F5] border border-[#E8E4DC] rounded-xl p-4 mt-2 flex flex-col gap-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="font-mono text-xs font-bold tracking-wider text-[#181311] uppercase">
+                UNSIGNED REMEDIATION XDR READY
+              </span>
+              {xdrDirective?.deficitAmount !== undefined && (
+                <span className="font-mono text-xs text-[#B8621B] font-semibold">
+                  Deficit: {xdrDirective.deficitAmount} {xdrDirective.assetCode || "USDC"}
+                </span>
+              )}
+            </div>
+            <div className="p-2.5 rounded-lg bg-white border border-[#E8E4DC] font-mono text-[11px] text-[#6B635B] break-all">
+              {unsignedXdr}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSignWithFreighter}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#181311] hover:bg-[#2A2422] text-white text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <span>1-Click Sign with Freighter</span>
+              </button>
+              {laboratoryUrl && (
+                <a
+                  href={laboratoryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-[#FAF8F5] border border-[#E8E4DC] text-[#181311] text-xs font-semibold transition-colors"
+                >
+                  <span>Open in Stellar Laboratory</span>
+                </a>
+              )}
+            </div>
+            {freighterStatus && (
+              <div className="text-xs font-mono text-[#1D7A46]">{freighterStatus}</div>
+            )}
+          </div>
+        )}
 
         {/* ALREADY CONFIRMED Box */}
         <div className="bg-[#EAF5EE] border border-[#CDE5D5] rounded-xl p-4 sm:p-5 mt-2 flex flex-col gap-2">
