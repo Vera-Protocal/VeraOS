@@ -18,6 +18,11 @@ export interface RemediationDirective {
   suggestedAlternatives?: string[];
   requiredDelta?: number | string;
   tokenContract?: string;
+  unsignedXdr?: string;
+  laboratoryUrl?: string;
+  deficitAmount?: number;
+  assetCode?: string;
+  memo?: string;
   mandatory: boolean;
 }
 
@@ -60,7 +65,19 @@ export interface VerificationRecord {
   remediation?: {
     target?: string;
     supplementalAmount?: number | string;
-    [key: string]: any;
+    directives?: Array<{
+      id?: string;
+      type?: string;
+      requirementId?: string;
+      target?: string;
+      reason?: string;
+      unsignedXdr?: string;
+      laboratoryUrl?: string;
+      deficitAmount?: number;
+      assetCode?: string;
+      memo?: string;
+    }>;
+    [key: string]: unknown;
   };
 }
 
